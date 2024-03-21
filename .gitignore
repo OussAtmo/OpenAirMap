@@ -1,0 +1,8 @@
+node_modules
+.env
+app/.env
+vendor/
+.DS_Store
+app/js_scripts/api_purpleair.js
+app/.DS_Store
+

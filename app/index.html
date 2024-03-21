@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- favicon -->
+    <link
+      rel="shortcut icon"
+      type="image/x-icon"
+      href="https://aircarto.fr/images/favicon.ico"
+    />
+
+    <!-- Leaflet -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+      integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+      crossorigin=""
+    />
+    <script
+      src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+      integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+      crossorigin=""
+    ></script>
+
+    <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script> -->
+
+    <!-- AJAX -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <!-- Bootstrap 5.3.0 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <!-- Cookies -->
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+
+    <!-- my files -->
+    <script src="js_scripts/NebuleAir.js"></script>
+    <script src="js_scripts/purpleAir.js"></script>
+    <script src="js_scripts/AtmoSudRef.js"></script>
+    <script src="js_scripts/AtmoSudMicro.js"></script>
+    <script src="js_scripts/sensorCommunity.js"></script>
+    <script src="js_scripts/AtmoSudModelisation.js"></script>
+    <!-- <script src="js_scripts/api_purpleair.js"></script> -->
+    <script src="js_scripts/leaflet-velocity.min.js"></script>
+    <script src="js_scripts/wind.js"></script>
+    <script src="js_scripts/config.js"></script>
+    <script src="js_scripts/functions.js"></script>
+
+    <script src="geojson/paca.geojson"></script>
+
+    <!-- style CSS  -->
+    <link rel="stylesheet" href="style/style.css" />
+    <link rel="stylesheet" href="style/leaflet-velocity.min.css" />
+
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/plugins/exporting.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-hash/0.2.1/leaflet-hash.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+
+    <!-- <script src="https://cdn.rawgit.com/hayeswise/Leaflet.PointInPolygon/v1.0.0/wise-leaflet-pip.js"></script> -->
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.snogylop@0.4.0/src/leaflet.snogylop.min.js"></script>
+
+    <title>Open Air Map</title>
+  </head>
+
+  <body>
+    <script>
+      HTMLCanvasElement.prototype.getContext = (function (origFn) {
+        return function (type, attribs) {
+          attribs = attribs || {};
+          attribs.preserveDrawingBuffer = true;
+          return origFn.call(this, type, attribs);
+        };
+      })(HTMLCanvasElement.prototype.getContext);
+    </script>
+
+    <!-- LA CARTE -->
+    <div id="map"></div>
+
+    <!-- Toast de chargement des données -->
+    <div class="toast-container position-fixed end-0 p-3" style="bottom: 10px">
+      <div
+        class="toast align-items-center text-bg-danger border-0"
+        id="messageToast"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="d-flex">
+          <div class="toast-body">Attention: <span id="message"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boutons PM1 PM2.5 PM10 -->
+    <div class="btn-group" id="div_buttonPM" role="group">
+      <button id="button_PM1" class="btn btn-outline-primary">PM1</button>
+      <button id="button_PM25" class="btn btn-outline-primary">PM2.5</button>
+      <button id="button_PM10" class="btn btn-outline-primary">PM10</button>
+      <button id="button_openInfoModal" class="btn btn-primary"  onclick="openInfoModal()"> <i class="bi bi-question-circle"></i> </button>
+    </div>
+
+    <!-- Bouton Plus d'infos -->
+    <button
+      type="button"
+      class="btn btn-primary"
+      id="button_openWelcomeModal"
+      onclick="openWelcomeModal()"
+    >
+      <i class="bi bi-info-circle"></i>
+    </button>
+
+
+    <!-- Bouton dropdown Choix des capteurs -->
+    <div class="dropdown" id="div_checkbox_choixCapteur">
+      <button
+        class="btn btn-primary dropdown-toggle"
+        type="button"
+        data-bs-toggle="dropdown"
+        data-bs-auto-close="outside"
+        aria-expanded="false"
+      >
+        Source des données
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_micro_stationsParticuliers"
+            name="checkbox_micro_stationsParticuliers"
+          /><label for="checkbox_micro_stationsParticuliers"
+            >&ensp;Capteurs NebuleAir</label
+          >
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_sensor_community"
+            name="checkbox_sensor_community"
+          /><label for="checkbox_sensor_community"
+            >&ensp;Capteurs Sensor.Community</label
+          >
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_purpleAir"
+            name="checkbox_purpleAir"
+          /><label for="checkbox_purpleAir">&ensp;Capteurs PurpleAir</label>
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_micro_stationsAtmoSud"
+            name="checkbox_micro_stationsAtmoSud"
+            disabled
+          /><label for="checkbox_micro_stationsAtmoSud"
+            >&ensp;Micro-stations AtmoSud</label
+          >
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_stationsRefAtmoSud"
+            name="checkbox_stationsRefAtmoSud"
+          /><label for="checkbox_stationsRefAtmoSud"
+            >&ensp;Stations de Référence AtmoSud</label
+          >
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_modelisationPMAtmoSud"
+            name="checkbox_modelisationPMAtmoSud"
+          /><label for="checkbox_modelisationPMAtmoSud"
+            >&ensp;Modélisation horaire PM AtmoSud</label
+          >
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_modelisationICAIRAtmoSud"
+            name="checkbox_modelisationICAIRAtmoSud"
+          /><label for="checkbox_modelisationICAIRAtmoSud"
+            >&ensp;Modélisation horaire ICAIRh AtmoSud</label
+          >
+        </li>
+        <li>
+          <input
+            type="checkbox"
+            id="checkbox_wind"
+            name="checkbox_wind"
+          /><label for="checkbox_wind">&ensp;Vents</label>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Logos -->
+    <div id="div_logos">
+      <a href="https://aircarto.fr">
+        <img
+          src="./img/LogoAirCarto.png"
+          class="float-right"
+          height="40"
+          alt=""
+      /></a>
+      <a href="https://atmosud.org">
+        <img
+          src="./img/LogoAtmoSud.png"
+          class="float-left"
+          height="40"
+          alt=""
+        />
+      </a>
+    </div>
+
+    <!-- Seuils PM -->
+    <div class="btn-group" id="div_button_seuils_PM125" role="group">
+      <button
+        class="btn"
+        id="btn_default"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="pas de donnée pour ce type de particule / ce pas de temps"
+      >
+        Pas de donnée
+      </button>
+      <button
+        class="btn"
+        id="btn_bon"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="0 à 10 &#181;g/m&#179;"
+      >
+        Bon
+      </button>
+      <button
+        class="btn"
+        id="btn_moyen"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="11 à 20 &#181;g/m&#179;"
+      >
+        Moyen
+      </button>
+      <button
+        class="btn"
+        id="btn_degrade"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="21 à 25 &#181;g/m&#179;"
+      >
+        Dégradé
+      </button>
+      <button
+        class="btn"
+        id="btn_mauvais"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="26 à 50 &#181;g/m&#179;"
+      >
+        Mauvais
+      </button>
+      <button
+        class="btn"
+        id="btn_tres_mauvais"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="51 à 75 &#181;g/m&#179;"
+      >
+        Très Mauvais
+      </button>
+      <button
+        class="btn"
+        id="btn_extr_mauvais"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title=">75 &#181;g/m&#179;"
+      >
+        Extr. Mauvais
+      </button>
+    </div>
+
+    <div class="btn-group" id="div_button_seuils_PM10" role="group">
+      <button
+        class="btn"
+        id="btn_default"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="pas de donnée pour ce type de particule / ce pas de temps"
+      >
+        Pas de donnée
+      </button>
+      <button
+        class="btn"
+        id="btn_bon"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="0 à 20 &#181;g/m&#179;"
+      >
+        Bon
+      </button>
+      <button
+        class="btn"
+        id="btn_moyen"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="21 à 40 &#181;g/m&#179;"
+      >
+        Moyen
+      </button>
+      <button
+        class="btn"
+        id="btn_degrade"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="41 à 50 &#181;g/m&#179;"
+      >
+        Dégradé
+      </button>
+      <button
+        class="btn"
+        id="btn_mauvais"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="51 à 100 &#181;g/m&#179;"
+      >
+        Mauvais
+      </button>
+      <button
+        class="btn"
+        id="btn_tres_mauvais"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title="101 à 150 &#181;g/m&#179;"
+      >
+        Très Mauvais
+      </button>
+      <button
+        class="btn"
+        id="btn_extr_mauvais"
+        data-bs-toggle="tooltip"
+        data-bs-placement="bottom"
+        data-bs-title=">150 &#181;g/m&#179;"
+      >
+        Extr. Mauvais
+      </button>
+    </div>
+
+    <!-- Boutons pas de temps -->
+    <div class="btn-group" id="div_button_pas_de_temps" role="group">
+      <button class="btn btn-outline-primary" id="btn_actuel">2 minutes</button>
+      <button class="btn btn-outline-primary" id="btn_quartHoraire">
+        Quart-horaire
+      </button>
+      <button class="btn btn-outline-primary" id="btn_horaire">Horaire</button>
+      <button class="btn btn-outline-primary" id="btn_journalier">
+        Journalier
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-outline-primary"
+      id="button_horloge"
+    ></button>
+
+    <button type="button" class="btn btn-primary" id="button_screenshot">
+      Faire une photo
+    </button>
+
+    <!-- Les Logos -->
+    <!-- <div id="logoAirCarto"><a href="https://aircarto.fr/"><img src="img/logoAirCarto.png" alt=""></a></div> -->
+
+    <!-- LE SIDE PANEL avec les graphiques (id "sidePanel") POUR DESKTOP -->
+    <div class="row text-center">
+      <div class="col-5" id="sidePanelCol">
+        <div class="card m-3" id="sidePanel" style="display: none">
+          <!-- Bouton pour fermer le panel -->
+          <button
+            type="button"
+            class="btn-close position-absolute top-0 end-0"
+            aria-label="Close"
+            style="margin: 5px"
+            onclick="CloseSidePanel()"
+          ></button>
+          <!-- <img src="img/Logo_Nebulo2.png" alt="" class="card-img-top"> -->
+          <span onclick="fullScreen()">
+            <i
+              class="bi bi-aspect-ratio position-absolute bottom-0 end-0 me-1"
+            ></i>
+          </span>
+          <div class="card-body">
+            <!-- Nom du capteur en haut -->
+            <!-- <h3 id="title_deviceName"></h3> -->
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-lg disabled"
+              id="title_deviceName"
+            ></button>
+            <h5 class="card-title" id="card-title"></h5>
+
+            <!--  Grafana iframe -->
+            <iframe
+              id="chartSensor"
+              src="about:blank"
+              width="100%"
+              height="400"
+              frameborder="0"
+            ></iframe>
+            <div id="chartSensor2"></div>
+            <div id="historique">Historique</div>
+            <span id="button1h"></span>
+            <span id="button3h"></span>
+            <span id="button24h"></span>
+            <span id="button48h"></span>
+            <span id="button1s"></span>
+            <span id="button1m"></span>
+            <span id="button1a"></span>
+            <div id="pdt">Pas de temps</div>
+            <span id="button2m"></span>
+            <span id="button15m"></span>
+            <span id="button60m"></span>
+            <span id="button1440m"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal General Infos -->
+    <div
+      class="modal fade"
+      id="welcome_Modal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">
+              Welcome to OpenAirMap
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="container-fluid">
+              <div class="row justify-content-md-center mb-2">
+                <div class="col-lg-4">
+                  <img src="img/LogoAirCarto.png" class="img-fluid" alt="..." />
+                </div>
+                <div class="col-lg-4">
+                  <img src="img/LogoAtmoSud.png" class="img-fluid" alt="..." />
+                </div>
+              </div>
+              <div class="row">
+                L'application OpenAirMap est un projet open source porté par
+                AirCarto et AtmoSud pour afficher en temps réel les mesures de
+                qualité de l'air effectué par les stations de mesures et les
+                micro-capteurs. Les informations affichées sur la carte sont
+                récupérées via différentes plateforme de mise à disposition de
+                données de mesure (API). A noter que cette application est en
+                constante évolution et amélioration. Pour toutes questions et
+                suggestions n'hésitez pas à déposer un message sur le
+                <a href="https://github.com/aircarto/OpenAirMap"
+                  >GitHub du projet</a
+                >. <br /><br />
+                <h5>Liste des données proposées par OpenAirMap</h5>
+                A noter que pour certains appareils, la donnée n'est pas
+                disponible pour tous les pas de temps (2 minutes, quart-horaire,
+                horaire et journalier).
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th scope="col"></th>
+                        <th scope="col">Type de mesure</th>
+                        <th scope="col">Icône</th>
+                        <th scope="col">Pas de temps</th>
+                        <th scope="col">Description</th>
+                        <th scope="col" class="text-end">Lien vers API</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row">Capteurs NebuleAir</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-info"
+                            >micro-capteur</span
+                          >
+                        </td>
+                        <td>
+                          <img
+                            src="img/nebuleAir/nebuleAir_moyen.png"
+                            alt=""
+                            style="width: 30px"
+                          />
+                        </td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              2m
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              QH
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              H
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          Micro-capteurs open source co-développés par AirCarto
+                          et AtmoSud
+                        </td>
+                        <td class="text-end align-middle">
+                          <a
+                            class="btn btn-primary"
+                            href="https://aircarto.fr/API_V2/"
+                            role="button"
+                            >AirCarto</a
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Capteurs Sensor.Community</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-info"
+                            >micro-capteur</span
+                          >
+                        </td>
+                        <td>
+                          <img
+                            src="img/purpleAir/purpleAir_moyen.png"
+                            alt=""
+                            style="width: 30px"
+                          />
+                        </td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              2m
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              QH
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              H
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          Micro-capteurs open source fabriqués par des citoyens
+                          bénévoles
+                        </td>
+                        <td class="text-end align-middle">
+                          <a
+                            class="btn btn-primary"
+                            href="https://sensor.community/fr/"
+                            role="button"
+                            >Sensor.Community</a
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Capteurs PurpleAir</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-info"
+                            >micro-capteur</span
+                          >
+                        </td>
+                        <td>
+                          <img
+                            src="img/SensorCommunity/SensorCommunity_moyen.png"
+                            alt=""
+                            style="width: 30px"
+                          />
+                        </td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              2m
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              QH
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              H
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          Micro-capteurs commercialisés par l'entreprise
+                          américaine PurpleAir Inc.
+                        </td>
+                        <td class="text-end align-middle">
+                          <a
+                            class="btn btn-primary"
+                            href="https://api.purpleair.com/"
+                            role="button"
+                            >PurpleAir</a
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Micro-stations AtmoSud</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-info"
+                            >micro-capteur</span
+                          >
+                        </td>
+                        <td>
+                          <img
+                            src="img/microStationsAtmoSud/microStationAtmoSud_moyen.png"
+                            alt=""
+                            style="width: 30px"
+                          />
+                        </td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button type="button" class="btn btn-danger btn-sm">
+                              2m
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              QH
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              H
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>Micro-capteurs déployés par AtmoSud</td>
+                        <td rowspan="4" class="text-end align-middle">
+                          <a
+                            class="btn btn-primary"
+                            href="https://api.atmosud.org/"
+                            role="button"
+                            >AtmoSud</a
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Stations de référence AtmoSud</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-dark"
+                            >station</span
+                          >
+                        </td>
+                        <td>
+                          <img
+                            src="img/refStationsAtmoSud/refStationAtmoSud_moyen.png"
+                            alt=""
+                            style="width: 30px"
+                          />
+                        </td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button type="button" class="btn btn-danger btn-sm">
+                              2m
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              QH
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              H
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          Stations de référence installées dans le cadre de la
+                          mission de surveillance de la qualité de l'air
+                          d'AtmoSud
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Modélisation Horaire PM AtmoSud</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-secondary"
+                            >modélisation</span
+                          >
+                        </td>
+                        <td></td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button type="button" class="btn btn-danger btn-sm">
+                              2m
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              QH
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              H
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          Modélisation des particules fines à l'échelle horaire
+                          sur toute la région PACA
+                        </td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Modélisation Horaire ICAIRH AtmoSud</th>
+                        <td>
+                          <span class="badge rounded-pill text-bg-secondary"
+                            >modélisation</span
+                          >
+                        </td>
+                        <td></td>
+                        <td>
+                          <div
+                            class="btn-group"
+                            role="group"
+                            aria-label="Basic mixed styles example"
+                          >
+                            <button type="button" class="btn btn-danger btn-sm">
+                              2m
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              QH
+                            </button>
+                            <button
+                              type="button"
+                              class="btn btn-success btn-sm"
+                            >
+                              H
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm">
+                              J
+                            </button>
+                          </div>
+                        </td>
+                        <td>
+                          Modélisation de l'indice cumulé de la qualité de l'air
+                          (NO2, O3, PM2.5 et PM10) à l'échelle horaire sur toute
+                          la région PACA.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Continuer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Modal General Infos -->
+  <div
+  class="modal fade"
+  id="InfoModal"
+  tabindex="-1"
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">
+          Micro Particules Renseignements
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <div class="row justify-content-md-center mb-2">
+            <div class="col-lg-8">
+              <img src="img/Particules-air_fig2-penetration-poumons.jpg" class="img-fluid" alt="..." />
+            </div>
+          </div>
+          <div class="row">
+            <h5>Les micros-particules sont des particules en suspension issues de toutes les combustions et de l'industrie manfacturière.
+                Les particules sont des irritants du système respiratoire et du système cardio-vasculaire.
+                Plus d'informations sur le <a href="https://www.atmosud.org/article/les-principaux-polluants">site d'AtmoSud.</a>
+              </h5>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">&nbsp;</th>
+                    <th scope="col">PM 1</th>
+                    <th scope="col">PM 2.5</th>
+                    <th scope="col">PM 10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Description</th>
+                    <td scope="row">Les PM1 ont un diamètre inférieur à 1 micromètres. Elles sont tellement fines qu'elles peuvent atteindre les alvéoles.</td>                 
+                    <td scope="row">Les PM2.5 ont un diamètre inférieur à 2.5 micromètres. Elles sont appelées particules fines.</td>
+                    <td scope="row">Les PM10 ont un diamètre inférieur à 10 micromètres. Elles sont dites respirables car elles pénètrent dans les bronches.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Risques</th>
+                    <td scope="row">Atteinte et endomagement des alvéoles</td>                 
+                    <td scope="row">Atteinte et endomagement des voies respiratoires inférieures</td>
+                    <td scope="row">Atteinte et endomagement des voies respiratoires supérieures</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Valeur Limite Annuel (selon comission européenne)</th>
+                    <td scope="row">&nbsp;</td>                 
+                    <td scope="row">25µg/m³</td>
+                    <td scope="row">40µg/m³</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Objectif Qualité</th>
+                    <td scope="row">&nbsp;</td>                 
+                    <td scope="row">20µg/m³</td>
+                    <td scope="row">300µg/m³</td>
+                  </tr>           
+                </tbody>
+              </table>
+              <div class="modal-body">
+                <div class="container-fluid">
+                  <div class="row justify-content-md-center mb-2">
+                    <div class="col-lg-6">
+                      <img src="img/comparaison-taille-pm25-pm10.jpg" class="img-fluid" alt="..." />
+                    </div>
+                  </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+        >
+          Continuer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Modal screen too smalll -->
+    <div
+      class="modal fade"
+      id="screen_tooSmall_Modal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel2"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel2">Attention</h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            L'application OpenAirMap n'est pas encore optimisée pour être
+            consultée sur un smartphone.
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              D'accord
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="sensorPanel_Modal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              id="button_close"
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+            <div class="container-fluid">
+              <div class="row justify-content-md-center mb-2">
+                <div class="col-lg-4">
+                  <img id="modal_logo" src="" class="img-fluid" alt="..." />
+                </div>
+                <button
+                  class="btn btn-outline-primary"
+                  style="margin-right: 5px"
+                  id="modal_sensorid"
+                ></button>
+              </div>
+            </div>
+          </div>
+          <div id="modal_body" class="modal-body">
+            <div class="container-fluid">
+              <div class="row justify-content-md-center mb-2">
+                <div id="modal_chartdivmodalgauge"></div>
+                <iframe
+                  id="modal_chartSensor"
+                  src="about:blank"
+                  width="100%"
+                  height="200"
+                  frameborder="0"
+                ></iframe>
+                <div id="modal_chartSensor2"></div>
+              </div>
+              <div id="modal_historique">Historique</div>
+              <span id="modal_button1h"></span>
+              <span id="modal_button3h"></span>
+              <span id="modal_button24h"></span>
+              <span id="modal_button48h"></span>
+              <span id="modal_button1s"></span>
+              <span id="modal_button1m"></span>
+              <span id="modal_button1a"></span>
+              <div id="modal_pdt">Pas de temps</div>
+              <span id="modal_button2m"></span>
+              <span id="modal_button15m"></span>
+              <span id="modal_button60m"></span>
+              <span id="modal_button1440m"></span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="container-fluid">
+              <div class="row justify-content-md-center mb-2">
+                <span id="modal_lastseen"></span>
+                <span id="modal_wifilevel"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        '
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="sensorPanel_Modal2"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button
+              id="button_close"
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+            <div class="container-fluid">
+              <div class="row justify-content-md-center mb-2">
+                <div class="col-lg-4">
+                  <img
+                    id="modal2_logo"
+                    src="img/LogoAtmoSud.png"
+                    class="img-fluid"
+                    alt="..."
+                  />
+                </div>
+                <button
+                  class="btn btn-outline-primary"
+                  style="margin-right: 5px"
+                  id="modal2_sensorid"
+                ></button>
+              </div>
+            </div>
+          </div>
+          <div id="modal2_body" class="modal-body">
+            <div class="container-fluid">
+              <div
+                id="modal2_list"
+                class="row justify-content-md-center mb-2"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- <div id="capture"></div> -->
+
+    <script>
+
+      //Mobile Test
+      const isMobile = mobileTest();
+      // const isMobile = true;
+
+      console.log("Mobile: " + isMobile);
+
+      //Amcharts gauges
+      var root1;
+      var root2;
+      var root3;
+
+      //Amcharts chart
+      var root4; 
+
+      //Data recorders
+      var apiFetchNebuleAir = {
+        data: [],
+        timespan: null,
+        timestamp: null,
+      };
+      var apiFetchAtmoSudRef = {
+        data: [],
+        timespan: null,
+        timestamp: null,
+      };
+      var apiFetchAtmoSudRefList = [];
+      var apiFetchAtmoSudMicro = {
+        data: [],
+        timespan: null,
+        timestamp: null,
+      };
+      var apiFetchSensorCommunity = {
+        data: [],
+        timespan: null,
+        timestamp: null,
+      };
+      var apiFetchPurpleAir = {
+        data: [],
+        timespan: null,
+        timestamp: null,
+      };
+
+      //Leaflet stuff
+      let coordsCenter = options.coordsCenter;
+      let zoomLevel = options.zoomLevel;
+      var map = L.map("map", {
+        zoomControl: isMobile == true ? false : true,
+        minZoom: options.minZoom,
+        maxZoom: options.maxZoom,
+        renderer: L.canvas(),
+        maxBounds: L.latLngBounds(options.boundNE, options.boundSW),
+      });
+
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        }
+      ).addTo(map);
+
+      map.once("locationfound", function (ev) {
+        console.log(ev.latlng);
+      });
+
+      //Location test
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(goToPosition, notAllowed);
+      } else {
+        map.setView(coordsCenter, zoomLevel);
+      }
+
+      //Options reader in URL
+      const query = {
+        conentration: options.selection,
+        minutes: options.timespanLower,
+        affichage: options.display,
+      };
+
+      //Constantly activated function which read the URL parameters
+      (function () {
+        let telem;
+        try {
+          const search_values = location.search.split("?")[1].split("&");
+          console.log(location.search);
+          console.log(search_values);
+          for (let i = 0; i < search_values.length; i++) {
+            telem = search_values[i].split("=");
+            query[telem[0]] = "";
+            if (typeof telem[1] != "undefined") query[telem[0]] = telem[1];
+          }
+
+          switch (query.minutes) {
+            case "2":
+              options.timespanLower = 2;
+              break;
+            case "15":
+              options.timespanLower = 15;
+              break;
+            case "60":
+              options.timespanLower = 60;
+              break;
+            case "1440":
+              options.timespanLower = 1440;
+              break;
+          }
+
+          switch (options.timespanLower) {
+            case 2:
+              var date = new Date();
+              var hour = date.getHours();
+              var get_hour_minus1 = date.setHours(date.getHours() - 1);
+              var hour_minus1 = new Date(get_hour_minus1);
+              var hour0 = hour_minus1.getHours();
+              var min = date.getMinutes();
+              document.querySelector("#button_horloge").innerHTML =
+                hour + ":" + (min < 10 ? "0" : "") + min; //2min par défaut
+              break;
+            case 15:
+              var get_start = end.setMinutes(end.getMinutes() - 15);
+              var start = new Date(get_start);
+              var hour1 = start.getHours();
+              var min_ori1 = start.getMinutes();
+              if (min_ori1 <= 15) {
+                var min1 = 0;
+              } else if (min_ori1 > 15 && min_ori1 <= 30) {
+                var min1 = 15;
+              } else if (min_ori1 > 30 && min_ori1 <= 45) {
+                var min1 = 30;
+              } else {
+                var min1 = 45;
+              }
+
+              document.querySelector("#button_horloge").innerHTML =
+                hour1 +
+                ":" +
+                (min1 < 10 ? "0" : "") +
+                min1 +
+                " à " +
+                hour2 +
+                ":" +
+                (min2 < 10 ? "0" : "") +
+                min2;
+              break;
+            case 60:
+              var end = new Date();
+              var hour2 = end.getHours();
+              var min2 = end.getMinutes();
+              var get_start = end.setHours(end.getHours() - 1);
+              var start = new Date(get_start);
+              var hour1 = start.getHours();
+              var min1 = start.getMinutes();
+              // document.querySelector("#button_horloge").innerHTML = hour1 + ":" + (min1 < 10 ? '0' : '') + min1 + " à " + hour2 + ":" + (min2 < 10 ? '0' : '') + min2 ;
+              document.querySelector("#button_horloge").innerHTML =
+                hour1 + ":" + "00" + " à " + hour2 + ":" + "00";
+              break;
+            case 1440:
+              var date = new Date();
+              var get_datemoins1 = date.setHours(date.getHours() - 24);
+              var datemoins1 = new Date(get_datemoins1);
+              var jour = datemoins1.getDate();
+              var mois = datemoins1.getMonth() + 1;
+              document.querySelector("#button_horloge").innerHTML =
+                (jour < 10 ? "0" : "") +
+                jour +
+                "/" +
+                (mois < 10 ? "0" : "") +
+                mois;
+              break;
+          }
+
+          switch (query.concentration) {
+            case "PM1":
+              options.compoundUpper = "PM1";
+              break;
+            case "PM25":
+              options.compoundUpper = "PM25";
+              break;
+            case "PM10":
+              options.compoundUpper = "PM10";
+              break;
+          }
+
+          options.display = "";
+
+          if (query.affichage.includes("nebuleair")) {
+            //$(document).ready(loadNebuleAir);
+            document.querySelector(
+              "#checkbox_micro_stationsParticuliers"
+            ).checked = true;
+            options.display += "nebuleair,";
+          }
+
+          if (query.affichage.includes("sensorcommunity")) {
+            //$(document).ready(loadSensorCommunity);
+            document.querySelector("#checkbox_sensor_community").checked = true;
+            options.display += "sensorcommunity,";
+          }
+
+          if (query.affichage.includes("purpleair")) {
+            //$(document).ready(loadPurpleAir);
+            document.querySelector("#checkbox_purpleAir").checked = true;
+            options.display += "purpleair,";
+          }
+
+          if (query.affichage.includes("atmosudmicro")) {
+            //$(document).ready(loadStationMicroAtmo);
+            document.querySelector(
+              "#checkbox_micro_stationsAtmoSud"
+            ).checked = true;
+            options.display += "atmosudmicro,";
+          }
+
+          if (query.affichage.includes("atmosudref")) {
+            //$(document).ready(loadStationRefAtmo);
+            document.querySelector(
+              "#checkbox_stationsRefAtmoSud"
+            ).checked = true;
+            options.display += "atmosudref,";
+          }
+        } catch (error) {
+          return;
+        }
+      })();
+
+      //Final parameters to load page
+      var compoundUpper = options.compoundUpper;
+      var timespanLower = options.timespanLower;
+      var timeLength = options.timeLength;
+      var display = options.display;
+
+      //Time generator
+      switch (timespanLower) {
+        case 2:
+          var date = new Date();
+          var hour = date.getHours();
+          var get_hour_minus1 = date.setHours(date.getHours() - 1);
+          var hour_minus1 = new Date(get_hour_minus1);
+          var hour0 = hour_minus1.getHours();
+          var min = date.getMinutes();
+          document.querySelector("#button_horloge").innerHTML =
+            hour + ":" + (min < 10 ? "0" : "") + min; //2min par défaut
+          break;
+        case 15:
+          var get_start = end.setMinutes(end.getMinutes() - 15);
+          var start = new Date(get_start);
+          var hour1 = start.getHours();
+          var min_ori1 = start.getMinutes();
+          if (min_ori1 <= 15) {
+            var min1 = 0;
+          } else if (min_ori1 > 15 && min_ori1 <= 30) {
+            var min1 = 15;
+          } else if (min_ori1 > 30 && min_ori1 <= 45) {
+            var min1 = 30;
+          } else {
+            var min1 = 45;
+          }
+
+          document.querySelector("#button_horloge").innerHTML =
+            hour1 +
+            ":" +
+            (min1 < 10 ? "0" : "") +
+            min1 +
+            " à " +
+            hour2 +
+            ":" +
+            (min2 < 10 ? "0" : "") +
+            min2;
+          break;
+        case 60:
+          var end = new Date();
+          var hour2 = end.getHours();
+          var min2 = end.getMinutes();
+          var get_start = end.setHours(end.getHours() - 1);
+          var start = new Date(get_start);
+          var hour1 = start.getHours();
+          var min1 = start.getMinutes();
+          document.querySelector("#button_horloge").innerHTML =
+            hour1 + ":" + "00" + " à " + hour2 + ":" + "00";
+          break;
+        case 1440:
+          var date = new Date();
+          var get_datemoins1 = date.setHours(date.getHours() - 24);
+          var datemoins1 = new Date(get_datemoins1);
+          var jour = datemoins1.getDate();
+          var mois = datemoins1.getMonth() + 1;
+          document.querySelector("#button_horloge").innerHTML =
+            (jour < 10 ? "0" : "") + jour + "/" + (mois < 10 ? "0" : "") + mois;
+          break;
+      }
+
+      switch (timespanLower) {
+        case 2:
+          document
+            .querySelector("#btn_actuel")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+        case 15:
+          document
+            .querySelector("#btn_quartHoraire")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+        case 60:
+          document
+            .querySelector("#btn_horaire")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+        case 1440:
+          document
+            .querySelector("#btn_journalier")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+      }
+
+      switch (compoundUpper) {
+        case "PM1":
+          document
+            .querySelector("#button_PM1")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+        case "PM25":
+          document
+            .querySelector("#button_PM25")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+        case "PM10":
+          document
+            .querySelector("#button_PM10")
+            .classList.replace("btn-outline-primary", "btn-primary");
+          break;
+      }
+
+      if (display.includes("nebuleair")) {
+        document.querySelector(
+          "#checkbox_micro_stationsParticuliers"
+        ).checked = true;
+        $(document).ready(loadNebuleAir);
+      }
+
+      if (display.includes("sensorcommunity")) {
+        document.querySelector("#checkbox_sensor_community").checked = true;
+        $(document).ready(loadSensorCommunity);
+      }
+
+      if (display.includes("atmosudref")) {
+        document.querySelector("#checkbox_stationsRefAtmoSud").checked = true;
+        $(document).ready(loadStationRefAtmo);
+      }
+
+      if (display.includes("atmosudmicro")) {
+        document.querySelector(
+          "#checkbox_micro_stationsAtmoSud"
+        ).checked = true;
+        $(document).ready(loadStationMicroAtmo);
+      }
+
+      if (display.includes("purpleair")) {
+        document.querySelector("#checkbox_purpleAir").checked = true;
+        $(document).ready(loadPurpleAir);
+      }
+
+      //Put Leaflet Hash after options
+      new L.Hash(map);
+
+      if (location.hash) {
+        const hash_params = location.hash.split("/");
+        coordsCenter = [hash_params[1], hash_params[2]];
+        zoomLevel = hash_params[0].substring(1);
+      }
+
+      //For region PACA if needed
+      // var polygonPACA = L.geoJSON(paca,{fillOpacity:0.2, color:'black', weight:0, invert:true}).addTo(map);
+
+      //All Layersgroups for display or hide
+      var nebuleairParticuliers = new L.layerGroup();
+      var sensorCommunity = new L.layerGroup();
+      var stationsRefAtmoSud = new L.layerGroup();
+      var stationsMicroAtmoSud = new L.layerGroup();
+      var modelisationPMAtmoSud = new L.layerGroup();
+      var modelisationICAIRAtmoSud = new L.layerGroup();
+      var purpleAir = new L.layerGroup();
+      var velocityLayer;
+
+      document
+        .querySelector("#button_screenshot")
+        .addEventListener("click", screenShot);
+
+      if (
+        document.querySelector("#checkbox_micro_stationsParticuliers").checked
+      ) {
+        map.addLayer(nebuleairParticuliers);
+      }
+
+      if (document.querySelector("#checkbox_sensor_community").checked) {
+        map.addLayer(sensorCommunity);
+      }
+
+      if (document.querySelector("#checkbox_stationsRefAtmoSud").checked) {
+        map.addLayer(stationsRefAtmoSud);
+      }
+
+      if (document.querySelector("#checkbox_micro_stationsAtmoSud").checked) {
+        map.addLayer(stationsMicroAtmoSud);
+      }
+
+      if (document.querySelector("#checkbox_modelisationPMAtmoSud").checked) {
+        map.addLayer(modelisationPMAtmoSud);
+      }
+
+      if (
+        document.querySelector("#checkbox_modelisationICAIRAtmoSud").checked
+      ) {
+        map.addLayer(modelisationICAIRAtmoSud);
+      }
+
+      if (document.querySelector("#checkbox_purpleAir").checked) {
+        map.addLayer(purpleAir);
+      }
+
+      document
+        .querySelector("#checkbox_micro_stationsParticuliers")
+        .addEventListener("change", switchNebuleAir);
+      document
+        .querySelector("#checkbox_sensor_community")
+        .addEventListener("change", switchSensorCommunity);
+      document
+        .querySelector("#checkbox_stationsRefAtmoSud")
+        .addEventListener("change", switchRefAtmo);
+      document
+        .querySelector("#checkbox_micro_stationsAtmoSud")
+        .addEventListener("change", switchMicroAtmo);
+      document
+        .querySelector("#checkbox_modelisationPMAtmoSud")
+        .addEventListener("change", switchModelisationPMAtmo);
+      document
+        .querySelector("#checkbox_modelisationICAIRAtmoSud")
+        .addEventListener("change", switchModelisationICAIRAtmo);
+      document
+        .querySelector("#checkbox_purpleAir")
+        .addEventListener("change", switchPurpleAir);
+      document
+        .querySelector("#checkbox_wind")
+        .addEventListener("change", switchWind);
+
+      document
+        .querySelector("#button_PM1")
+        .addEventListener("click", choosePM1);
+      document
+        .querySelector("#button_PM25")
+        .addEventListener("click", choosePM25);
+      document
+        .querySelector("#button_PM10")
+        .addEventListener("click", choosePM10);
+
+      document
+        .querySelector("#btn_actuel")
+        .addEventListener("click", chooseActuel);
+      document
+        .querySelector("#btn_quartHoraire")
+        .addEventListener("click", choose15);
+      document
+        .querySelector("#btn_horaire")
+        .addEventListener("click", choose60);
+      document
+        .querySelector("#btn_journalier")
+        .addEventListener("click", choose1440);
+
+      //Automatic reloaders
+      setInterval(function () {
+        console.log("Setinterval:");
+        console.log(timespanLower * 60 * 1000);
+        console.log(Date.now() - apiFetchNebuleAir.timestamp);
+
+        if (
+          document.querySelector("#checkbox_micro_stationsParticuliers").checked
+        ) {
+          if (
+            apiFetchNebuleAir.data.length == 0 ||
+            (apiFetchNebuleAir.data.length != 0 &&
+              Date.now() - apiFetchNebuleAir.timestamp >
+                timespanLower * 60 * 1000 - 1000)
+          ) {
+            loadNebuleAir();
+            openToast("Données NebuleAir rechargées");
+          }
+        }
+
+        if (document.querySelector("#checkbox_sensor_community").checked) {
+          if (
+            apiFetchSensorCommunity.data.length == 0 ||
+            (apiFetchSensorCommunity.data.length != 0 &&
+              Date.now() - apiFetchSensorCommunity.timestamp >
+                timespanLower * 60 * 1000 - 1000)
+          ) {
+            loadSensorCommunity();
+            openToast("Données Sensor.Community rechargées");
+          }
+        }
+
+        if (document.querySelector("#checkbox_stationsRefAtmoSud").checked) {
+          if (
+            apiFetchAtmoSudRef.data.length == 0 ||
+            (apiFetchAtmoSudRef.data.length != 0 &&
+              Date.now() - apiFetchAtmoSudRef.timestamp >
+                timespanLower * 60 * 1000 - 1000)
+          ) {
+            loadStationRefAtmo();
+            openToast("Données Atmo sations de reférence rechargées");
+          }
+        }
+
+        if (document.querySelector("#checkbox_micro_stationsAtmoSud").checked) {
+          if (
+            apiFetchAtmoSudMicro.data.length == 0 ||
+            (apiFetchAtmoSudMicro.data.length != 0 &&
+              Date.now() - apiFetchAtmoSudMicro.timestamp >
+                timespanLower * 60 * 1000 - 1000)
+          ) {
+            loadStationMicroAtmo();
+            openToast("Données Atmo microstations rechargées");
+          }
+        }
+
+        if (
+          document.querySelector("#checkbox_modelisationPMAtmoSud").checked &&
+          timespanLower == 60
+        ) {
+          loadModelisationPMAtmo();
+          openToast("Modélisation Atmo PM rechargée");
+        }
+
+        if (
+          document.querySelector("#checkbox_modelisationICAIRAtmoSud")
+            .checked &&
+          timespanLower == 60
+        ) {
+          loadModelisationICAIRAtmo();
+          openToast("Modélisation Atmo ICAIR rechargée");
+        }
+
+        if (document.querySelector("#checkbox_purpleAir").checked) {
+          if (
+            apiFetchPurpleAir.data.length == 0 ||
+            (apiFetchPurpleAir.data.length != 0 &&
+              Date.now() - apiFetchPurpleAir.timestamp >
+                timespanLower * 60 * 1000 - 1000)
+          ) {
+            loadPurpleAir();
+            openToast("Données PurpleAir rechargées");
+          }
+        }
+      }, timespanLower * 60 * 1000);
+
+      setInterval(function () {
+        if (document.querySelector("#checkbox_wind").checked) {
+          velocityLayer.remove();
+          const current_time = new Date();
+          let day = String(current_time.getFullYear());
+          if (current_time.getMonth() + 1 < 10) {
+            day += "0";
+            day += current_time.getMonth() + 1;
+          } else {
+            day += current_time.getMonth() + 1;
+          }
+          if (current_time.getDate() < 10) {
+            day += "0";
+            day += current_time.getDate();
+          } else {
+            day += current_time.getDate();
+          }
+          let hour = "";
+          if (current_time.getHours() < 10) {
+            hour += "0";
+            hour += current_time.getHours();
+          } else {
+            hour += current_time.getHours();
+          }
+
+          let wind_link =
+            "https://meteo.atmosud.org/" +
+            day +
+            "/wind_field_" +
+            hour +
+            ".json";
+          console.log(wind_link);
+
+          $.getJSON(wind_link, function (data) {
+            velocityLayer = L.velocityLayer({
+              displayValues: false,
+              displayOptions: false,
+              data: data,
+              velocityScale: 0.015,
+              colorScale: ["#71C3F2", "#447591"],
+              minVelocity: 1,
+              maxVelocity: 10,
+              overlayName: "wind_layer",
+            }).addTo(map);
+          });
+
+          openToast("Données Vent rechargées");
+        }
+      }, 60 * 60 * 1000);
+    </script>
+
+    <!-- Bootstrap 5.3.0 -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"
+      integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      var tooltipTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      );
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+
+      const screenTooSmall_modal = new bootstrap.Modal(
+        "#screen_tooSmall_Modal"
+      );
+
+      if (screen.width < 1080) {
+        //screenTooSmall_modal.show();
+        var btns = document.getElementsByClassName("btn");
+        for (const btn of btns) {
+          btn.classList.add("btn-sm");
+        }
+      }
+
+      //welcome mdodal (open at startup with cookies or with button_openWelcomeModal)
+      const welcomeModal = new bootstrap.Modal("#welcome_Modal");
+
+      if (Cookies.get("welcome") == null) {
+        welcomeModal.show();
+        Cookies.set("welcome", "oui", { expires: 7 });
+      }
+
+      function openWelcomeModal() {
+        welcomeModal.show();
+      }
+
+      const InfoModal = new bootstrap.Modal("#InfoModal");
+      
+      function openInfoModal() {
+        InfoModal.show();
+      }
+
+
+      const sensorPanelModal = new bootstrap.Modal("#sensorPanel_Modal");
+      const sensorPanelModal2 = new bootstrap.Modal("#sensorPanel_Modal2");
+
+      var fullScreenMode = false;
+
+      function fullScreen() {
+        console.log("full screen mode");
+        if (fullScreenMode == false) {
+          document
+            .getElementById("sidePanelCol")
+            .classList.replace("col-5", "col-12");
+          fullScreenMode = true;
+        } else {
+          document
+            .getElementById("sidePanelCol")
+            .classList.replace("col-12", "col-5");
+          fullScreenMode = false;
+        }
+      }
+    </script>
+  </body>
+</html>
